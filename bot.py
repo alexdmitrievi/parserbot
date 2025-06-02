@@ -3,13 +3,17 @@ import os
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ParseMode
 from aiogram.types import BotCommand, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.client.default import DefaultBotProperties
 from filters import filter_lots
 from parser import fetch_lots
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
 
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN)
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN)
+)
 dp = Dispatcher()
 
 # --- Reply-кнопки ---
@@ -56,3 +60,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
