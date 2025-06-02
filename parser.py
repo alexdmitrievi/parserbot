@@ -13,3 +13,4 @@ def fetch_lots():
 
 
 
+

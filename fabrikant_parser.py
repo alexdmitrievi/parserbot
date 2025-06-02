@@ -13,40 +13,49 @@ def fetch_fabrikant():
     for region in REGIONS:
         page = 1
         while True:
-            url = f"https://bankrot.fabrikant.ru/trades/?search_text=земельный+участок+{region}&page={page}"
-            resp = requests.get(url, headers=headers, timeout=10)
-            if resp.status_code != 200:
-                break
-            soup = BeautifulSoup(resp.text, "html.parser")
-            lots = soup.select(".trades-table__row")
-            if not lots:
-                break
+            try:
+                url = f"https://bankrot.fabrikant.ru/trades/?search_text=земельный+участок+{region}&page={page}"
+                resp = requests.get(url, headers=headers, timeout=10)
+                if resp.status_code != 200:
+                    print(f"[fabrikant] HTTP {resp.status_code} на {url}")
+                    break
 
-            for lot in lots:
-                try:
-                    title_tag = lot.select_one(".trades-table__name a")
-                    title = title_tag.text.strip()
-                    url = "https://bankrot.fabrikant.ru" + title_tag.get("href", "")
+                soup = BeautifulSoup(resp.text, "html.parser")
+                lots = soup.select(".trades-table__row")
+                if not lots:
+                    break
 
-                    price_tag = lot.select_one(".trades-table__price span")
-                    if not price_tag:
+                for lot in lots:
+                    try:
+                        title_tag = lot.select_one(".trades-table__name a")
+                        title = title_tag.text.strip()
+                        url = "https://bankrot.fabrikant.ru" + title_tag.get("href", "")
+
+                        price_tag = lot.select_one(".trades-table__price span")
+                        if not price_tag:
+                            continue
+                        price_text = price_tag.text.strip().split()[0]
+                        price = int(price_text.replace(" ", "").replace("₽", ""))
+
+                        purpose = "СНТ" if "снт" in title.lower() else ("ИЖС" if "ижс" in title.lower() else "")
+                        if not purpose or price > MAX_PRICE:
+                            continue
+
+                        results.append({
+                            "title": title,
+                            "price": price,
+                            "url": url,
+                            "region": region,
+                            "purpose": purpose
+                        })
+                    except Exception as e:
+                        print(f"[fabrikant] Ошибка парсинга лота: {e}")
                         continue
-                    price_text = price_tag.text.strip().split()[0]
-                    price = int(price_text.replace(" ", "").replace("₽", ""))
 
-                    purpose = "СНТ" if "снт" in title.lower() else ("ИЖС" if "ижс" in title.lower() else "")
-                    if not purpose or price > MAX_PRICE:
-                        continue
-
-                    results.append({
-                        "title": title,
-                        "price": price,
-                        "url": url,
-                        "region": region,
-                        "purpose": purpose
-                    })
-                except Exception:
-                    continue
-            page += 1
+                page += 1
+            except Exception as e:
+                print(f"[fabrikant] Ошибка запроса: {e}")
+                break
 
     return results
+
